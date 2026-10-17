@@ -57,7 +57,7 @@ export async function handleBossAI(message, client) {
     const now = Date.now();
     const lastMessage = userCooldowns.get(cooldownKey) || 0;
 
-    if (now - lastMessage < 4000) return true;
+    if (now - lastMessage < 1000) return true;
 
     userCooldowns.set(cooldownKey, now);
 
