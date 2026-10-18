@@ -12,7 +12,7 @@ export default {
         .setDescription(
             "Unlocks the current channel (allows @everyone to send messages again).",
         )
-.setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
+.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
     category: "moderation",
 
     async execute(interaction, config, client) {
