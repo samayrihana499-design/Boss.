@@ -20,7 +20,7 @@ export default {
                 .setDescription("Reason for the unban")
                 .setRequired(false),
         )
-        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
     category: "moderation",
 
     async execute(interaction, config, client) {
