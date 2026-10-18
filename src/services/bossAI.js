@@ -103,7 +103,7 @@ export async function handleBossAI(message, client) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      logger.error('Boss AI API error:', errorData);
+      console.log('BOSS API ERROR DETAILS:', JSON.stringify(errorData, null, 2));
       await message.reply({
         content: "I'm busy handling top-floor business. Try again shortly.",
         allowedMentions: { parse: [] }
