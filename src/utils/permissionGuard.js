@@ -1,3 +1,4 @@
+
 // permissionGuard.js
 
 import { PermissionFlagsBits } from 'discord.js';
@@ -42,10 +43,7 @@ function isModerationCategory(category) {
 }
 
 /**
- * Whether a member holds the guild-configured moderator role (config wizard modRole).
- * @param {import('discord.js').GuildMember | null | undefined} member
- * @param {object | null | undefined} guildConfig
- * @returns {boolean}
+ * Whether a member holds the guild-configured moderator role.
  */
 export function memberHasConfiguredModeratorRole(member, guildConfig) {
   if (!member || !guildConfig) {
@@ -58,11 +56,8 @@ export function memberHasConfiguredModeratorRole(member, guildConfig) {
 }
 
 /**
- * Whether a member may run a moderation command (native Discord perm or configured modRole).
- * @param {import('discord.js').GuildMember | null | undefined} member
- * @param {object | null | undefined} guildConfig
- * @param {bigint | bigint[] | null} [requiredPermissions]
- * @returns {boolean}
+ * Whether a member may run a moderation command.
+ * Moderation commands require Administrator or guild ownership.
  */
 export function memberHasModerationCommandAccess(member, guildConfig, requiredPermissions = null) {
   if (!member) {
@@ -73,24 +68,11 @@ export function memberHasModerationCommandAccess(member, guildConfig, requiredPe
     return true;
   }
 
-  if (member.permissions.has(PermissionFlagsBits.Administrator)) {
-    return true;
-  }
-
-  if (requiredPermissions != null && member.permissions.has(requiredPermissions)) {
-    return true;
-  }
-
-  return memberHasConfiguredModeratorRole(member, guildConfig);
+  return member.permissions.has(PermissionFlagsBits.Administrator);
 }
 
 /**
  * Whether a guild member satisfies a command's default_member_permissions bitfield.
- * Guild owners always pass. Moderation commands also accept the configured modRole.
- * @param {import('discord.js').GuildMember | null | undefined} member
- * @param {bigint | null} permissionBitfield
- * @param {{ guildConfig?: object | null, commandCategory?: string | null }} [options]
- * @returns {boolean}
  */
 export function memberMeetsCommandPermissions(member, permissionBitfield, options = {}) {
   if (permissionBitfield == null) {
@@ -101,10 +83,13 @@ export function memberMeetsCommandPermissions(member, permissionBitfield, option
     return false;
   }
 
-  const { guildConfig = null, commandCategory = null } = options;
+  const { commandCategory = null } = options;
 
   if (isModerationCategory(commandCategory)) {
-    return memberHasModerationCommandAccess(member, guildConfig, permissionBitfield);
+    return (
+      member.guild?.ownerId === member.id ||
+      member.permissions.has(PermissionFlagsBits.Administrator)
+    );
   }
 
   if (member.guild?.ownerId === member.id) {
@@ -116,7 +101,6 @@ export function memberMeetsCommandPermissions(member, permissionBitfield, option
 
 /**
  * Check moderation command access and reply when denied.
- * @returns {Promise<boolean>}
  */
 export async function checkModerationPermissions(
   interaction,
@@ -144,9 +128,7 @@ export async function checkModerationPermissions(
 }
 
 /**
- * Enforce a command's default_member_permissions for prefix (and other non-Discord-gated) invocations.
- * Slash commands are gated by Discord, but prefix commands must mirror the same requirement in code.
- * @returns {Promise<boolean>} true when the member may proceed
+ * Enforce a command's default_member_permissions.
  */
 export async function enforceDefaultCommandPermissions(interaction, command, context = {}) {
   if (isBotOwner(interaction.user?.id)) {
@@ -291,7 +273,6 @@ export async function checkBotPermissions(
 }
 
 function hashUserId(userId) {
-
   let hash = 0;
   for (let i = 0; i < userId.length; i++) {
     const char = userId.charCodeAt(i);
@@ -302,7 +283,6 @@ function hashUserId(userId) {
 }
 
 export function auditPermissionCheck(userId, action, allowed, reason = null) {
-
   const userHash = hashUserId(userId);
 
   if (allowed) {
