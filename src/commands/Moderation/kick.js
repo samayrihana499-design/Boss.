@@ -17,7 +17,7 @@ export default {
         .addStringOption((option) =>
             option.setName("reason").setDescription("Reason for the kick"),
         )
-        .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
     category: "moderation",
 
     async execute(interaction, config, client) {
