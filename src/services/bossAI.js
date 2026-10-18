@@ -43,7 +43,7 @@ export async function handleBossAI(message, client) {
       return false;
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = process.env.OPENROUTER_API_KEY;
 
     if (!apiKey) {
       await message.reply({
@@ -75,7 +75,7 @@ export async function handleBossAI(message, client) {
     await message.channel.sendTyping().catch(() => {});
 
     const response = await fetch(
-      'https://api.openai.com/v1/chat/completions',
+      'https://openrouter.ai/api/v1/chat/completions',
       {
         method: 'POST',
         headers: {
@@ -83,7 +83,7 @@ export async function handleBossAI(message, client) {
           'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+          model: 'openrouter/free',
           messages: [
             {
               role: 'developer',
@@ -95,7 +95,7 @@ export async function handleBossAI(message, client) {
               content: `${message.member?.displayName || message.author.username}: ${userMessage}`
             }
           ],
-          max_completion_tokens: 180
+          max_tokens: 180
         }),
         signal: AbortSignal.timeout(20000)
       }
