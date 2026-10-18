@@ -21,7 +21,7 @@ export default {
                 .setDescription("Reason for the mass kick")
                 .setRequired(false)
         )
-        .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
     category: "moderation",
     abuseProtection: { maxAttempts: 3, windowMs: 60_000 },
 
