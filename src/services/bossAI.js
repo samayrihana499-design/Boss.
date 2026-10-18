@@ -1,4 +1,6 @@
 
+// src/services/bossAI.js
+
 import { logger } from '../utils/logger.js';
 
 const conversationHistory = new Map();
@@ -45,10 +47,32 @@ Your personality should remain consistent in every conversation.
 
 const MAX_HISTORY = 8;
 
+function extractReply(data) {
+  const content = data?.choices?.[0]?.message?.content;
+
+  if (typeof content === 'string') {
+    return content.trim();
+  }
+
+  if (Array.isArray(content)) {
+    return content
+      .filter(part => part?.type === 'text' && typeof part.text === 'string')
+      .map(part => part.text)
+      .join('')
+      .trim();
+  }
+
+  return '';
+}
+
 export async function handleBossAI(message, client) {
   try {
     if (!client.user || !message.mentions.users.has(client.user.id)) {
       return false;
+    }
+
+    if (!message.guild) {
+      return true;
     }
 
     const apiKey = process.env.OPENROUTER_API_KEY;
@@ -82,48 +106,78 @@ export async function handleBossAI(message, client) {
 
     await message.channel.sendTyping().catch(() => {});
 
-    const response = await fetch(
-      'https://openrouter.ai/api/v1/chat/completions',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: 'openrouter/free',
-          messages: [
-            {
-              role: 'developer',
-              content: BOSS_PERSONALITY
-            },
-            ...history,
-            {
-              role: 'user',
-              content: `${message.member?.displayName || message.author.username}: ${userMessage}`
-            }
-          ],
-          max_tokens: 180
-        }),
-        signal: AbortSignal.timeout(20000)
-      }
-    );
+    let reply = '';
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.log('BOSS API ERROR DETAILS:', JSON.stringify(errorData, null, 2));
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const response = await fetch(
+        'https://openrouter.ai/api/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'openrouter/free',
+            messages: [
+              {
+                role: 'system',
+                content: BOSS_PERSONALITY
+              },
+              ...history,
+              {
+                role: 'user',
+                content: `${message.member?.displayName || message.author.username}: ${userMessage}`
+              }
+            ],
+            max_tokens: 250,
+            temperature: 0.8
+          }),
+          signal: AbortSignal.timeout(25000)
+        }
+      );
+
+      const responseText = await response.text();
+
+      let data;
+
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        logger.error('Boss AI returned invalid JSON.', {
+          status: response.status,
+          attempt
+        });
+        continue;
+      }
+
+      if (!response.ok) {
+        logger.error('Boss AI API request failed.', {
+          status: response.status,
+          error: data?.error?.message || 'Unknown API error',
+          attempt
+        });
+        continue;
+      }
+
+      reply = extractReply(data);
+
+      if (reply) break;
+
+      logger.warn('Boss AI returned an empty response.', {
+        attempt,
+        model: data?.model,
+        finishReason: data?.choices?.[0]?.finish_reason,
+        hasChoices: Array.isArray(data?.choices)
+      });
+    }
+
+    if (!reply) {
       await message.reply({
-        content: "I'm busy handling top-floor business. Try again shortly.",
+        content: "Upper management is temporarily unavailable. Try again shortly.",
         allowedMentions: { parse: [] }
       });
       return true;
-    }
-
-    const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content?.trim();
-
-    if (!reply) {
-      throw new Error('Boss AI returned an empty response.');
     }
 
     history.push(
