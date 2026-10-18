@@ -36,7 +36,7 @@ export default {
         .addStringOption((option) =>
             option.setName("reason").setDescription("Reason for the timeout"),
         )
-        .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
     category: "moderation",
 
     async execute(interaction, config, client) {
